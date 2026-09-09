@@ -1,7 +1,25 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[codz]
+*.py[cod]
 *$py.class
+.venv/
+
+# Forensic Evidence & Dumps (Exceeds GitHub limits or sensitive)
+*.vmem
+*.raw
+*.dmp
+*.mem
+*.E01
+*.dd
+*.img
+*.pcap
+*.pcapng
+
+# Environment & Local Secrets
+.env
+*.pem
+*.key
+credentials.json
 
 # C extensions
 *.so
