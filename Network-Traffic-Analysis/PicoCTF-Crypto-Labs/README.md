@@ -1,54 +1,35 @@
-# Cryptography and Challenge Library Learning Intro
-# PicoCTF Cryptography & Multi-Layer Deobfuscation Analysis
+# PicoCTF: Cryptography & Multi-Layer Deobfuscation Analysis
 
-## Header / Title
-* **Challenge Names:** `caesar`, `interencdec`, `New Caesar`
-* **Platform:** PicoCTF / CyLab Security Academy
-* **Categories:** Cryptography, Reverse Engineering, Obfuscation
-* **Difficulty Tier:** Easy to Medium
-* **Analyst:** Daniel (Systems Engineering Student & Aspiring DFIR/SOC Analyst)
+**Platform:** PicoCTF / CyLab Security Academy  
+**Category:** Cryptography & Obfuscation  
+**Difficulty:** Easy to Medium  
+**Author:** Daniel  
 
----
+## Overview
+Technical analysis and reversal of three cryptography and payload obfuscation challenges (`caesar`, `interencdec`, and `New Caesar`). The investigation covers classical rotation ciphers, nested Base64 transport encoding, and custom 4-bit nibble substitution in Python.
 
-## Executive Summary
-This write-up documents the technical analysis and reversal of three cryptography and payload obfuscation challenges. The core investigation focused on deconstructing classical shift ciphers, stripping nested Base64 transport encodings, and reverse-engineering a custom nibble-based Base16 substitution algorithm using Python. All payloads were recovered locally without relying on third-party online decoders to maintain data isolation and analytical rigour.
+## Environment & Tools
+* **Python 3:** Custom reversal scripts and modular arithmetic.
+* **Linux Utilities:** Native CLI tools (`base64`, `xxd`).
 
----
+## Technical Walkthrough
 
-## Tools & Environment Used
-* **Python 3.x:** Developed custom reversal scripts, bitwise shifting routines, and modular arithmetic decoders.
-* **Linux Terminal Utilities:** Used native utilities (`base64 -d`, `xxd`) for binary representation and payload stripping.
-* **Standard Python Libraries (`string`, `base64`):** Leveraged for ASCII table mapping and character set filtering.
+### 1. Caesar (Substitution Shift)
+Analysis of `picoCTF{dspttjohuifsvcjdpohatwvibg}` confirmed an unshifted prefix. Comparing the first ciphertext letter `d` (ASCII 100) to expected plaintext `c` (ASCII 99) established a shift key of $k = 1$.
 
----
+Applying a shift offset of $-25$ across internal characters yielded the flag:
+`picoCTF{crossingtherubicongzsvuhaf}`
 
-## Step-by-Step Investigation / Methodology
+### 2. Interencdec (Nested Base64 & ROT-19)
+1. **Layer 1:** Decoded the raw string `YidkM0JxZGtwQlRYdHFhR3g2YUhsZmF6TnFlVGwzWVROclh6YzRNalV3YUcxcWZRPT0nCg==` to reveal a byte string envelope: `b'd3BqZGtwQlRYdHFhR3g2YUhsZmF6TnFlVGwzWVROclh6YzRNalV3YUcxcWZRPT0='`.
+2. **Layer 2:** Stripped the `b'...'` wrapper and decoded the inner Base64 string to obtain `wpjdkpBTX{qaGx6aHl_k3jy9wa3k_78250hmj}`.
+3. **Layer 3:** Applied a ROT-19 rotation cipher to recover the final plaintext:
+`picoCTF{caesar_d3cr9pt3d_78250afc}`
 
-### 1. Lab: `caesar` (Substitution Shift Analysis)
-* **Objective:** Decrypt a classic Caesar rotation cipher applied exclusively to the flag payload inside a static wrapper.
-* **Execution:** Analysis of the string `picoCTF{dspttjohuifsvcjdpohatwvibg}` showed that the `picoCTF{}` prefix was unshifted. Calculating the distance between the first ciphertext character `d` (ASCII 100) and expected plaintext character `c` (ASCII 99) established a key shift offset of $k = 25$ (or $-1$).
+### 3. New Caesar (Custom Base16 & Keyed Addition)
+The challenge implements custom Base16 encoding (splitting 8-bit bytes into two 4-bit nibbles mapped to `abcdefghijklmnop`) followed by modular addition using a single-character key.
 
-$$\text{Shift Offset: } k = (100 - 99) \pmod{26} = 1 \implies \text{Decrypt Shift: } 25$$
-
-Applying a $-25$ modular shift across all internal characters successfully yielded the plaintext payload.
-
-### 2. Lab: `interencdec` (Nested Transport Encoding Stripping)
-* **Objective:** Identify, isolate, and remove multi-layered Base64 wrappers before applying a shift cipher rotation.
-* **Execution:**
-  1. **Layer 1 Decoding:** Executed Base64 decoding on the raw string `YidkM0JxZGtwQlRYdHFhR3g2YUhsZmF6TnFlVGwzWVROclh6YzRNalV3YUcxcWZRPT0nCg==`, which produced a string-formatted Python bytes object: `b'd3BqZGtwQlRYdHFhR3g2YUhsZmF6TnFlVGwzWVROclh6YzRNalV3YUcxcWZRPT0='`.
-  2. **Layer 2 Envelope Removal:** Stripped the literal `b'...'` byte wrapper from the payload to avoid invalid padding errors, then passed the inner string through a second Base64 decode pass, producing: `wpjdkpBTX{qaGx6aHl_k3jy9wa3k_78250hmj}`.
-  3. **Layer 3 Caesar Rotation:** Analyzed character offsets and applied a ROT-19 shift to map the scrambled alpha characters back into readable English text.
-
-### 3. Lab: `New Caesar` (Custom Base16 & Keyed Modular Addition)
-* **Objective:** Reverse-engineer a custom two-stage cipher featuring 4-bit nibble splitting and modular addition over a restricted 16-character alphabet.
-* **Algorithm Deconstruction:**
-  * **Custom Base16 Encoding:** Each 8-bit ASCII character was split into two 4-bit nibbles (upper and lower), mapped to `ALPHABET = "abcdefghijklmnop"`.
-  * **Modular Addition:** Each character was shifted using a single-character key $k \in \text{ALPHABET}$:
-
-$$c_i = (p_i + k_i) \pmod{16}$$
-
-* **Reversal Script Logic:** A custom Python script was engineered to invert the shift through modular subtraction, reconstruct 8-bit integers via bitwise left-shifts (`(val1 << 4) + val2`), and iterate across all 16 candidate keys while filtering for printable ASCII output.
-
+Reversal script to brute-force all 16 alphabet key candidates and filter printable ASCII:
 ```python
 import string
 
