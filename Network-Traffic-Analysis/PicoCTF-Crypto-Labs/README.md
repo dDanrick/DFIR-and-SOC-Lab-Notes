@@ -37,40 +37,40 @@ LOWERCASE_OFFSET = ord("a")
 ALPHABET = string.ascii_lowercase[:16]
 cipher_text = "fegdeogdgecoeocgcgchcfcffccfca"
 
-# Revertimos la adicion modular unshift
+# Reverse the modular unshift addition.
 def unshift(c, k):
     t1 = ord(c) - LOWERCASE_OFFSET
     t2 = ord(k) - LOWERCASE_OFFSET
     return ALPHABET[(t1 - t2) % len(ALPHABET)]
 
-# Convertimos parejas de Base16 a ASCII
+# Convert Base16 pairs to ASCII.
 def b16_decode(b16_str):
     dec = ""
-    # Un for para recorrer la cadena en pares
+    # A for to iterate through the string in pairs.
     for i in range(0, len(b16_str), 2):
-        # Tomamos la pareja de letras
+        # Take the pair of letters.
         c1 = b16_str[i]
         c2 = b16_str[i+1]
         
-        # Obtenemos su valor numérico dentro del alfabeto
+        # Obtain its numerical value within the alphabet.
         val1 = ALPHABET.index(c1)
         val2 = ALPHABET.index(c2)
         
-        # Unimos los 4 bits superiores (val1) y los 4 bits inferiores (val2)
+        # Combine the upper 4 bits (val1) and the lower 4 bits (val2).
         byte_value = (val1 << 4) + val2
         
-        # Convertimos el número a su carácter ASCII correspondiente
+        # Convert the number to its corresponding ASCII character.
         dec += chr(byte_value)
     return dec
 
 # Brute Force en los 16 candidatos
 for key in ALPHABET:
-    # Invertimos el shift en toda la cadena
+    # Invert the shift across the entire chain.
     b16_plain = ""
     for char in cipher_text:
         b16_plain += unshift(char, key)
     
-    # De Base16 a texto ASCII
+    # From Base16 to ASCII text
     try:
         possible_flag = b16_decode(b16_plain)
         print(f"Key '{key}': picoCTF{{{possible_flag}}}")
